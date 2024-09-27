@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Distribt.Shared.Setup</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Distribt.Shared.Api\Distribt.Shared.Api.csproj" />
+    <ProjectReference Include="..\Distribt.Shared.Discovery\Distribt.Shared.Discovery.csproj" />
+    <ProjectReference Include="..\Distribt.Shared.EventSourcing\Distribt.Shared.EventSourcing.csproj" />
+    <ProjectReference Include="..\Distribt.Shared.Logging\Distribt.Shared.Logging.csproj" />
+    <ProjectReference Include="..\Distribt.Shared.Secrets\Distribt.Shared.Secrets.csproj" />
+    <ProjectReference Include="..\Distribt.Shared.Serialization\Distribt.Shared.Serialization.csproj" />
+    <ProjectReference Include="..\Shared.Communication\Distribt.Shared.Communication.RabbitMQ\Distribt.Shared.Communication.RabbitMQ.csproj" />
+    <ProjectReference Include="..\Shared.Databases\Distribt.Shared.Databases.MySql\Distribt.Shared.Databases.MySql.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Netmentor.ROP.ApiExtensions" Version="1.0.10" />
+    <PackageReference Include="Scrutor" Version="4.1.0" />
+  </ItemGroup>
+  
+  <Import Project="../../../GlobalSettings.msbuild" />
+</Project>

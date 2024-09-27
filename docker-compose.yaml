@@ -1,0 +1,109 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3.9-management-alpine #management version needed to be able to have a User interface
+    container_name: rabbitmq
+    environment:
+        - RABBITMQ_DEFAULT_USER=DistribtAdmin
+        - RABBITMQ_DEFAULT_PASS=DistribtPass
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes: 
+          - ./tools/rabbitmq/rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+          - ./tools/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+  consul:
+    container_name: consul
+    image: consul
+    ports:
+      - 8500:8500 # this is the UI/API calls
+      - 8400:8400
+      - 8600:8600
+      - 8600:8600/udp
+  vault:
+    image: vault:latest
+    container_name: vault
+    ports:
+      - 8200:8200
+    environment:
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      # in production scenarios the token mechanisim for loggin will be forbidden,
+      # it cannot be in source control.
+      VAULT_TOKEN: "vault-distribt-token" # to be able to use the cli on dev
+      VAULT_DEV_ROOT_TOKEN_ID: "vault-distribt-token"
+    cap_add:
+      - IPC_LOCK
+    depends_on:
+      - rabbitmq
+      - consul
+  
+  #########################
+  # Graylog configuration #
+  #########################
+  # mongo should be called mongo
+  mongo:
+    container_name: mongo_graylog
+    image: mongo:4.2
+  elasticsearch:
+    container_name: elasticserach_graylog
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+  graylog:
+    image: graylog/graylog:4.2.5
+    container_name: graylog
+    environment:
+      # at least 16 characters
+      - GRAYLOG_PASSWORD_SECRET=thispassshouldbeatleast16characters
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/
+    entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
+    depends_on:
+      - mongo
+      - elasticsearch
+    ports:
+      - 9000:9000 # Graylog web interface and REST API
+      - 1514:1514
+      - 1514:1514/udp
+      - 12201:12201
+      - 12201:12201/udp
+  #############################
+  # Graylog configuration end #
+  #############################
+  mongodb:
+    image: mongo:latest
+    container_name: MongoDb
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=distribtUser
+      - MONGO_INITDB_ROOT_PASSWORD=distribtPassword
+      - MONGO_INITDB_DATABASE=distribt
+    volumes:
+      - ./tools/mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+  mysql:
+    image: mysql:8.0
+    container_name: MySql
+    environment:
+      MYSQL_DATABASE: 'distribt'
+      MYSQL_USER: 'distribtUser'
+      MYSQL_PASSWORD: 'distribtPassword'
+      MYSQL_ROOT_PASSWORD: 'distribtRootPassword'
+    ports:
+      # de normal seria 3306:3306 pero tengo el 3306 ocupado en mi máquina personal.
+      - 3307:3306
+    volumes:
+      - ./tools/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
